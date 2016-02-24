@@ -9,7 +9,7 @@ this.getClass().classLoader.rootLoader.addURL(new File("lib/ojdbc6.jar").toURL()
 ///////////////////////////////////////////////////////////////////////////////
 // default values
 
-default_config_filename = [System.getProperty('user.dir'), '.oracle_schema_migrations.json'].join(File.separator) 
+default_config_filename = [System.getProperty('user.dir'), '.oracle_schema_migrations.json'].join(File.separator)
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ class MyConfig {
 		def jsonSlurper = new JsonSlurper()
 		def f = new File(this.filename)
 		return jsonSlurper.parseText( f.getText('UTF-8') )
-	} 
+	}
 }
 
 class OsmDb {
@@ -72,25 +72,33 @@ class OsmDb {
 					this.connectString = "jdbc:oracle:thin:@//${this.host}:${this.port}/${this.sid}"
 				}
 			}
-			
+
 			this.dbInstance = Sql.newInstance(this.connectString, this.user, this.pass)
 		}
 		return this.dbInstance
 	}
 
-	def checkInit() {
+	def checkInit(createIfMissing=false) {
 		this.connect()
 		def checkOK = true
-		['DDL_LOG', 'DDL_IGNORE', 'DDL_TRIGGER'].each {		
-			print it
+		['DDL_LOG', 'DDL_IGNORE', 'DDL_TRIGGER'].each {
+			def objName = it
+			print objName
 			dbInstance.eachRow('''
 				SELECT count(1) as CNT
 				FROM user_objects
 				WHERE OBJECT_NAME = ?
 				''', [it]){
 					if(it.CNT != 1){
-						println " missing"
+						print " missing"
 						checkOK = false
+						if(createIfMissing){
+							def statement = new File("lib/ddl_audit/${objName}.sql").getText('UTF-8')
+							this.dbInstance.execute statement
+							print ", created"
+							checkOK = true
+						}
+						println ""
 					}else{
 						println " found"
 					}
@@ -98,7 +106,6 @@ class OsmDb {
 		}
 		return checkOK
 	}
-
 
 }
 
@@ -144,4 +151,7 @@ def osmdb = new OsmDb(
 		pass:config.db.pass
 	)
 
-osmdb.checkInit()
+if(!osmdb.checkInit(createIfMissing:true)){
+	println "Error checking DB."
+	return
+}
