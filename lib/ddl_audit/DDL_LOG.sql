@@ -1,11 +1,13 @@
-CREATE TABLE ddl_log (
-  operation  VARCHAR2(30),
-  obj_owner  VARCHAR2(30),
-  obj_name   VARCHAR2(30),
-  obj_type   VARCHAR2(30),
-  sql_text   CLOB,
-  attempt_by VARCHAR2(30),
-  attempt_dt DATE,
-  user_name  VARCHAR2(50),
-  user_host  VARCHAR2(50)
-)
+CREATE TABLE ddl_log AS
+  SELECT
+    ACTION_NAME                       AS operation,
+    s.owner                           AS obj_owner,
+    OBJ_NAME                          AS obj_name,
+    object_type                       AS obj_type,
+    empty_clob()                      AS sql_text,
+    USER                              AS attempt_by,
+    sysdate                           AS attempt_dt,
+    SYS_CONTEXT('USERENV', 'OS_USER') AS user_name,
+    SYS_CONTEXT('USERENV', 'HOST')    AS user_host
+  FROM USER_AUDIT_STATEMENT s, all_objects o
+  WHERE NULL IS NOT NULL

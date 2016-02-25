@@ -1,6 +1,8 @@
-CREATE TABLE ddl_ignore (
-  operation VARCHAR2(30),
-  obj_owner VARCHAR2(30),
-  obj_name  VARCHAR2(30),
-  obj_type  VARCHAR2(30)
-)
+CREATE TABLE ddl_ignore AS
+  SELECT
+    '                              ' AS operation,
+    owner                            AS obj_owner,
+    object_name                      AS obj_name,
+    object_type                      AS obj_type
+  FROM all_objects
+  WHERE NULL IS NOT NULL
